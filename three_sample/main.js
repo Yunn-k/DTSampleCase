@@ -21,6 +21,10 @@ controls.dampingFactor = 0.05; //댐핑 효과의 강도 설정 > 값이 클수�
 
 controls.minDistance = 2; // 줌 최소거리
 controls.maxDistance = 10; // 줌 최대거리
+controls.minPolarAnagle = Math.PI/2;    // 상하 최소각도
+// controls.maxPolarAngle = Math.PI/2;     // 상하 최대각도
+controls.minAzimuthAngle = -Math.PI/4;   // 좌우 최소각도
+controls.maxAzimuthAngle = Math.PI / 4; // 좌우 최대각도
 // controls.target.set(1, 1, 1); // 새로운 바라볼 지점 설정
 // controls.update(); // 설정이 끝난 뒤 업데이트
 
