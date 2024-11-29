@@ -4,13 +4,17 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // BoxGeometry로 큐브 생성 테스트
 //--- 1. 기본 3가지값 세팅
 const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x5f5f5f);
 
 //camera: 가상시점 - (fov : 디스플레이에 표시되는 장면의 범위. default 50, aspect, near, far)
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+// camera.position.set(5,5,5);
+camera.lookAt(0,0,0)
 
 // 렌더러 생성 및 캔버스 사이즈 설정
-const renderer = new THREE.WebGLRenderer();
+const renderer = new THREE.WebGLRenderer({  antialias: true }); //안티앨리어싱 활성화로 계단현상없이 부드럽게 렌더링처리
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.shadowMap.enabled = true; // 그림자 활성화 > 조명과 객체에 의해 생성되는 그림자가 랜더링 됨. default: false
 
 document.body.appendChild(renderer.domElement);
 
