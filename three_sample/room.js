@@ -56,25 +56,57 @@ const wallMaterial = new THREE.MeshStandardMaterial({
 // 뒷벽
 const backwallGeometry = new THREE.PlaneGeometry(10, 2.5);
 const backWall = new THREE.Mesh(backwallGeometry, wallMaterial);
-const height = 2.5/2;
-backWall.position.set(0,height,-2.5);
+const wallHeight = 2.5/2;
+backWall.position.set(0,wallHeight,-2.5);
 scene.add(backWall);
 
 // 옆벽 - 뒷벽 소재 재활용
 const sidewallGeometry = new THREE.PlaneGeometry(5,2.5);
 const leftWall = new THREE.Mesh(sidewallGeometry, wallMaterial);
 leftWall.rotation.y = -Math.PI/2;
-leftWall.position.set(-5, height, 0);
+leftWall.position.set(-5, wallHeight, 0);
 scene.add(leftWall);
 
 const rightWall = new THREE.Mesh(sidewallGeometry, wallMaterial);
 rightWall.rotation.y = Math.PI/2;
-rightWall.position.set(5,height, 0);
+rightWall.position.set(5,wallHeight, 0);
 scene.add(rightWall);
 
 // 4. 서버랙 만들기
+function createServerRack(x,z){
+    const rackGroup = new THREE.Group();
+
+    //랙 프레임
+    const rackGeometry = new THREE.BoxGeometry(1,2,0.8);
+    const rackMaterial = new THREE.MeshStandardMaterial({
+        color: 0x333333,
+        roughness:0.7
+    });
+
+    const rack = new THREE.Mesh(rackGeometry, rackMaterial);
+    rack.position.set(x,1,z);
+    rack.castShadow = true;
+    rackGroup.add(rack);
 
 
+    // led 표시등 추가
+    const ledGeometry = new THREE.BoxGeometry(0.02, 0.02, 0.02);
+    const ledMaterial = new THREE.MeshStandardMaterial({
+        color: 0x00ff00,
+        emissive : 0x00ff00,
+        emissiveIntensity:0.5
+    });
+
+    const led = new THREE.Mesh(ledGeometry, ledMaterial);
+    led.position.set(x + 0.3, 2, z-0.3);
+    rackGroup.add(led);
+
+    return rackGroup;
+}
+
+scene.add(createServerRack(-1.5, 0));
+scene.add(createServerRack(0,-1))
+scene.add(createServerRack(1.5,-2))
 
 // 5. Animation Loop
 function animate(){
@@ -88,8 +120,8 @@ animate();
 // 6. 기타 이벤트 처리
 window.addEventListener('resize', onWindowResize, false);
 
-function onWindowResize(){
-    camera.asperct = window.innerWidth/window.innerHeight;
-    camera.updateProjectionMatrix;
+function onWindowResize() {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
