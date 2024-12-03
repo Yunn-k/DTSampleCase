@@ -111,13 +111,15 @@ function createServerRack(x,z, rackNumber){
     //서버 유닛들 추가
     const serverHeight = 0.13;
     const serverGeometry = new THREE.BoxGeometry(1, serverHeight, 0.7);
-    const serverMaterial = new THREE.MeshPhongMaterial({
-        color: 0x666666
-    });
 
     for(let i = 0; i < 10; i++){
+        const serverMaterial = new THREE.MeshPhongMaterial({ //각자가 color, emissive를 가질 수 있도록 for문 안으로 넣어서 처리!
+            color: 0x666666,
+            emissive : 0x000000
+        });
+
         const server = new THREE.Mesh(serverGeometry, serverMaterial);
-        server.position.set(x, i/6 + 0.3, z);
+        server.position.set(x + 0.01, i/6 + 0.3, z);
         server.castShadow = true;
         server.userData = {type : 'server', number: rackNumber, unit : i+1 }; // 유닛 식별데이터
         clickableObjects.push(server); // 식별가능하도록 배열에 추가
@@ -183,19 +185,24 @@ function onMouseClick(e){
     console.log(intersects);
 
     if(intersects.length > 0 ){
-        const find = intersects.find(obj => obj.object.userData.type ==='server'); //find메서드로 일치하는 데이터를 콜백으로 받음
-
-        if(find === undefined){
-            alert(`서버랙 ${find.object.userData.number}이 선택되었습니다`);
+        // const find = intersects.find(obj => obj.object.userData.type ==='server'); //find메서드로 일치하는 데이터를 콜백으로 받음
+        const find = intersects[0].object;
+        
+        if(find.userData.unit === undefined){
+            alert(`서버랙 ${find.userData.number}이 선택되었습니다`);
         } else {
+            alert(`서버랙 ${find.userData.number}번의 ${find.userData.unit}번 유닛이 선택되었습니다.`)
+            if (find.material && find.material.emissive) {
+                find.material.emissive.setHex(0xff0000);
 
-            alert(`서버랙 ${find.object.userData.number}번의 ${find.object.userData.unit}번 유닛이 선택되었습니다.`)
+                // 150ms 후 발광 효과 제거
+                setTimeout(() => {
+                    find.material.emissive.setHex(0x000000);
+                }, 150);
+            }
         }
 
-        // const object = intersects[0].object;
-        // if(object.userData.type === 'rack'){
-        // } else if (object.userData.type === 'server'){
-        // }                                                                                                                                                 
+                                                                                                                                       
     }
 
 
