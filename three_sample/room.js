@@ -77,7 +77,11 @@ function createServerRack(x,z){
     const rackGroup = new THREE.Group();
 
     //랙 프레임
-    const rackGeometry = new THREE.BoxGeometry(1, 2, 0.8);
+    const rack_x = 1;
+    const rack_y = 2;
+    const rack_z = 0.8;
+
+    const rackGeometry = new THREE.BoxGeometry(rack_x, rack_y, rack_z);
     const rackMaterial = new THREE.MeshStandardMaterial({
         color: 0x333333,
         roughness:0.7
@@ -88,17 +92,26 @@ function createServerRack(x,z){
     rack.castShadow = true;
     rackGroup.add(rack);
 
+    // 랙 라인
+    const rackEdgeGeometry = new THREE.EdgesGeometry(rackGeometry);
+    const rackEdgeMaterial = new THREE.MeshBasicMaterial({
+        color: 0x3f7b9d
+    })
+    const rackEdges = new THREE.LineSegments(rackEdgeGeometry, rackEdgeMaterial);
+    rackEdges.position.set(x,1,z);
+    scene.add(rackEdges);
+
+
     //서버 유닛들 추가
-    const serverHeight = 0.15;
+    const serverHeight = 0.13;
     const serverGeometry = new THREE.BoxGeometry(1, serverHeight, 0.7);
-    const serverMaterial = new THREE.MeshStandardMaterial({
-        color: 0x666666,
-        roughness: 0.5
+    const serverMaterial = new THREE.MeshPhongMaterial({
+        color: 0x666666
     });
 
     for(let i = 0; i < 10; i++){
         const server = new THREE.Mesh(serverGeometry, serverMaterial);
-        server.position.set(x, i/5, z);
+        server.position.set(x, i/6 + 0.3, z);
         server.castShadow = true;
         rackGroup.add(server);
     }
@@ -114,6 +127,8 @@ function createServerRack(x,z){
     const led = new THREE.Mesh(ledGeometry, ledMaterial);
     led.position.set(x + 0.3, 2, z-0.3);
     rackGroup.add(led);
+
+    // rackGroup.rotation.y = Math.PI/2;
 
     return rackGroup;
 }
@@ -131,11 +146,21 @@ function animate(){
 
 animate();
 
+
+
 // 6. 기타 이벤트 처리
 window.addEventListener('resize', onWindowResize, false);
 
-function onWindowResize() {
+// 6-1 resize event
+function onWindowResize(e) {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+}
+
+// 6-2. click event
+function onMouseClick(e){
+    // 마우스 위치를 정규화된 장치 좌표로 변환
+    // mouse.x = 
+
 }
