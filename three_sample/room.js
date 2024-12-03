@@ -25,6 +25,11 @@ controls.maxPolarAngle = Math.PI / 2;
 controls.minAzimuthAngle = -Math.PI / 4; // -45도 (좌우 최소각도)
 controls.maxAzimuthAngle = Math.PI / 4;
 
+// 2-1. 이벤트 처리를 위한 객체 정의
+const mouse = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+const clickableObjects = []; // 클릭가능한 객체들을 저장할 배열 
+
 // 3. 룸 만들기
 // 3-1. 조명 설정
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 전체조명
@@ -32,7 +37,7 @@ scene.add(ambientLight);
 
 const directionlLight = new THREE.DirectionalLight(0xffffff, 0.5); // 특정방향 조명 DirectionalLight( color : Integer, intensity : Float )
 directionlLight.position.set(5,5,5);
-// directionlLight.castShadow = true; // 동적그림자 (비용이 많이듦)
+directionlLight.castShadow = true; // 동적그림자 (비용이 많이듦)
 scene.add(directionlLight);
 
 // 3-2. 바닥 설정
@@ -73,7 +78,7 @@ rightWall.position.set(5,wallHeight, 0);
 scene.add(rightWall);
 
 // 4. 서버랙 만들기
-function createServerRack(x,z){
+function createServerRack(x,z, rackNumber){
     const rackGroup = new THREE.Group();
 
     //랙 프레임
@@ -90,6 +95,8 @@ function createServerRack(x,z){
     const rack = new THREE.Mesh(rackGeometry, rackMaterial);
     rack.position.set(x,1,z);
     rack.castShadow = true;
+    rack.userData = {type:'rack', number: rackNumber}; //식별데이터
+    clickableObjects.push(rack); // 식별가능하도록 배열에 추가
     rackGroup.add(rack);
 
     // 랙 라인
@@ -99,8 +106,7 @@ function createServerRack(x,z){
     })
     const rackEdges = new THREE.LineSegments(rackEdgeGeometry, rackEdgeMaterial);
     rackEdges.position.set(x,1,z);
-    scene.add(rackEdges);
-
+    rackGroup.add(rackEdges); // rackGroup에 추가해주어야 클릭이벤트시 하나의 덩어리로 인식함. scene에 추가하면 안됨!
 
     //서버 유닛들 추가
     const serverHeight = 0.13;
@@ -113,6 +119,8 @@ function createServerRack(x,z){
         const server = new THREE.Mesh(serverGeometry, serverMaterial);
         server.position.set(x, i/6 + 0.3, z);
         server.castShadow = true;
+        server.userData = {type : 'server', number: rackNumber, unit : i+1 }; // 유닛 식별데이터
+        clickableObjects.push(server); // 식별가능하도록 배열에 추가
         rackGroup.add(server);
     }
 
@@ -133,9 +141,9 @@ function createServerRack(x,z){
     return rackGroup;
 }
 
-scene.add(createServerRack(-1.5, 0));
-scene.add(createServerRack(0,-1))
-scene.add(createServerRack(1.5,-2))
+scene.add(createServerRack(-1.5, 0, 1));
+scene.add(createServerRack(0,-1, 2))
+scene.add(createServerRack(1.5,-2, 3))
 
 // 5. Animation Loop
 function animate(){
@@ -150,6 +158,7 @@ animate();
 
 // 6. 기타 이벤트 처리
 window.addEventListener('resize', onWindowResize, false);
+window.addEventListener('click', onMouseClick, false);
 
 // 6-1 resize event
 function onWindowResize(e) {
@@ -160,7 +169,36 @@ function onWindowResize(e) {
 
 // 6-2. click event
 function onMouseClick(e){
-    // 마우스 위치를 정규화된 장치 좌표로 변환
-    // mouse.x = 
+
+    // 마우스 위치를 정규화된 장치 좌표로 변환 (-1 ~ 1)
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    // console.log(mouse);
+
+    //Raycaster
+    raycaster.setFromCamera(mouse, camera); // 카메라의 시점에서 마우스가 가리키는 방향으로 광선 생성 -> 객체와 교차여부 확인
+
+    const intersects = raycaster.intersectObjects(clickableObjects);
+    console.log(intersects);
+
+    if(intersects.length > 0 ){
+        const find = intersects.find(obj => obj.object.userData.type ==='server'); //find메서드로 일치하는 데이터를 콜백으로 받음
+
+        if(find === undefined){
+            alert(`서버랙 ${find.object.userData.number}이 선택되었습니다`);
+        } else {
+
+            alert(`서버랙 ${find.object.userData.number}번의 ${find.object.userData.unit}번 유닛이 선택되었습니다.`)
+        }
+
+        // const object = intersects[0].object;
+        // if(object.userData.type === 'rack'){
+        // } else if (object.userData.type === 'server'){
+        // }                                                                                                                                                 
+    }
+
 
 }
+
+
