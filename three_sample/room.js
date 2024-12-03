@@ -77,7 +77,7 @@ function createServerRack(x,z){
     const rackGroup = new THREE.Group();
 
     //랙 프레임
-    const rackGeometry = new THREE.BoxGeometry(1,2,0.8);
+    const rackGeometry = new THREE.BoxGeometry(1, 2, 0.8);
     const rackMaterial = new THREE.MeshStandardMaterial({
         color: 0x333333,
         roughness:0.7
@@ -88,8 +88,22 @@ function createServerRack(x,z){
     rack.castShadow = true;
     rackGroup.add(rack);
 
+    //서버 유닛들 추가
+    const serverHeight = 0.15;
+    const serverGeometry = new THREE.BoxGeometry(1, serverHeight, 0.7);
+    const serverMaterial = new THREE.MeshStandardMaterial({
+        color: 0x666666,
+        roughness: 0.5
+    });
 
-    // led 표시등 추가
+    for(let i = 0; i < 10; i++){
+        const server = new THREE.Mesh(serverGeometry, serverMaterial);
+        server.position.set(x, i/5, z);
+        server.castShadow = true;
+        rackGroup.add(server);
+    }
+
+    // led 표시등
     const ledGeometry = new THREE.BoxGeometry(0.02, 0.02, 0.02);
     const ledMaterial = new THREE.MeshStandardMaterial({
         color: 0x00ff00,
