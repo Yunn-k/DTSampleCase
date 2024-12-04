@@ -22,13 +22,14 @@ controls.dampingFactor = 0.05;
 controls.minPolarAngle = Math.PI / 4; // 45도 (상하 최소각도)
 controls.maxPolarAngle = Math.PI / 2;
 
-controls.minAzimuthAngle = -Math.PI / 4; // -45도 (좌우 최소각도)
-controls.maxAzimuthAngle = Math.PI / 4;
+controls.minAzimuthAngle = -Math.PI / 3; // -45도 (좌우 최소각도)
+controls.maxAzimuthAngle = Math.PI / 3;
 
 // 2-1. 이벤트 처리를 위한 객체 정의
 const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 const clickableObjects = []; // 클릭가능한 객체들을 저장할 배열 
+const temperatureLights = []; // 경고등
 
 // 3. 룸 만들기
 // 3-1. 조명 설정
@@ -95,9 +96,24 @@ function createServerRack(x,z, rackNumber){
     const rack = new THREE.Mesh(rackGeometry, rackMaterial);
     rack.position.set(x,1,z);
     rack.castShadow = true;
-    rack.userData = {type:'rack', number: rackNumber}; //식별데이터
+    rack.userData = { //식별데이터
+        type:'rack', 
+        number: rackNumber, 
+        temperature : 20 + Math.random() * 20 // 20~40사이 랜덤온도
+    }; 
+  
     clickableObjects.push(rack); // 식별가능하도록 배열에 추가
     rackGroup.add(rack);
+
+    //랙 바닥 온도표시등
+    const temperatureLight = createTemperatureLight(x, z, rack.userData.temperature);
+    temperatureLights.push({
+        light: temperatureLight,
+        rack: rack
+    });
+
+    rackGroup.add(temperatureLight);
+
 
     // 랙 라인
     const rackEdgeGeometry = new THREE.EdgesGeometry(rackGeometry);
@@ -147,7 +163,36 @@ scene.add(createServerRack(-1.5, 0, 1));
 scene.add(createServerRack(0,-1, 2))
 scene.add(createServerRack(1.5,-2, 3))
 
-// 5. Animation Loop
+
+// 5. 온도 경고등
+function createTemperatureLight(x,z,temperature){
+    const radius = 0.8;
+    const segments = 32;
+    const lightGeometry = new THREE.CircleGeometry(radius, segments);
+
+    //온도에 따른 색상 설정(20도~40도 사이)
+    const t = (temperature - 20) / 20; // 0~1 범위로 정규화
+    const color = new THREE.Color();
+    color.setHSL(0.3 * (1 - t), 1, 0.5); // 초록(0.3)에서 빨강(0)으로
+
+    const lightMaterial = new THREE.MeshBasicMaterial({
+        color: color,
+        transparent : true,
+        opacity: 0.3,
+        // opacity: 0.3 + (t * 0.5),
+        // side: THREE.FrontSide
+        side: THREE.DoubleSide
+    });
+
+    const light = new THREE.Mesh(lightGeometry, lightMaterial);
+    light.position.set(x, 0.01, z);
+    light.rotation.x = -Math.PI/2;
+
+    return light;
+}
+
+
+// Animation Loop
 function animate(){
     renderer.setAnimationLoop(animate);
     controls.update();
@@ -158,7 +203,7 @@ animate();
 
 
 
-// 6. 기타 이벤트 처리
+// 기타 이벤트 처리
 window.addEventListener('resize', onWindowResize, false);
 window.addEventListener('click', onMouseClick, false);
 
@@ -195,17 +240,16 @@ function onMouseClick(e){
             if (find.material && find.material.emissive) {
                 find.material.emissive.setHex(0xff0000);
 
-                // 150ms 후 발광 효과 제거
                 setTimeout(() => {
                     find.material.emissive.setHex(0x000000);
                 }, 150);
             }
         }
-
-                                                                                                                                       
     }
-
-
 }
 
 
+// 온도변화 시뮬레이션
+function updateTemperature(){
+
+}
