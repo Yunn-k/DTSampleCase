@@ -108,6 +108,7 @@ function createServerRack(x,z, rackNumber){
     clickableObjects.push(rack); // 식별가능하도록 배열에 추가
     rackGroup.add(rack);
 
+
     //랙 바닥 온도표시등
     const temperatureLight = createTemperatureLight(x, z, rack.userData.temperature);
     if (temperatureLight) {
@@ -185,11 +186,6 @@ function createTemperatureLight(x,z,temperature){
     const colors = [];
     const centerColor = new THREE.Color(1, 0, 0);
     const edgeColor = new THREE.Color(0, 0, 0);
-
-    // edgeColor.setHSL(0, 0, 0);
-
-    // const color = new THREE.Color();
-    // color.setHSL(0.3 * (1 - t), 1, 0.5); 
 
     for(let i = 0; i < lightGeometry.attributes.position.count; i++){
         if (i === 0 ){ // 중심점

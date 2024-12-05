@@ -4,12 +4,11 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 // BoxGeometry로 큐브 생성 테스트
 //--- 1. 기본 3가지값 세팅
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x5f5f5f);
 
 //camera: 가상시점 - (fov : 디스플레이에 표시되는 장면의 범위. default 50, aspect, near, far)
 const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
 // camera.position.set(5,5,5);
-camera.lookAt(0,0,0)
+// camera.lookAt(0,0,0)
 
 // 렌더러 생성 및 캔버스 사이즈 설정
 const renderer = new THREE.WebGLRenderer({  antialias: true }); //안티앨리어싱 활성화로 계단현상없이 부드럽게 렌더링처리
@@ -36,23 +35,64 @@ controls.target.set(1, 1, 1); // 새로운 바라볼 지점 설정
 controls.update(); // 설정이 끝난 뒤 업데이트
 
 
-//---2. 큐브 생성
-//박스 생성 및 설정
-const geometry = new THREE.BoxGeometry(1, 1, 1);
-const material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-const cube = new THREE.Mesh(geometry, material); // 큐브 설정값 결합
-cube.position.set(1, 0, 0); // (x,y,z 순서)
+//이벤트용 객체 설정
+const raycaster = new THREE.Raycaster();
+const clickableobjects = [];
+const mouse = new THREE.Vector2();
 
-const geometry2 = new THREE.BoxGeometry(1, 2, 1);
-const material2 = new THREE.MeshBasicMaterial({ color: 0xFFFF00 })
+// 조명 설정
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+scene.add(ambientLight);
+
+
+//---2. 방 생성
+// 바닥 생성
+const floorGeometry = new THREE.BoxGeometry(10, 5 , 0.1);
+const floorMaterial = new THREE.MeshStandardMaterial({
+    color : 0xcccccc,
+    roughness : 0.8,
+    metalness: 0.2
+});
+const floor = new THREE.Mesh(floorGeometry, floorMaterial);
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+// 벽면 생성
+const backwallGeometry = new THREE.BoxGeometry(10, 2, 0.1);
+const backwallMaterial = new THREE.MeshStandardMaterial({
+    color: 0xcccccc,
+    roughness : 0.8
+})
+const backwall = new THREE.Mesh(backwallGeometry, backwallMaterial);
+backwall.position.set(0,1,-2.4)
+scene.add(backwall);
+
+
+//박스 생성 및 설정
+const geometry = new THREE.BoxGeometry(0.5, 1, 0.5);
+const material = new THREE.MeshBasicMaterial({ color: 0x00f0f0 });
+const cube = new THREE.Mesh(geometry, material); // 큐브 설정값 결합
+cube.position.set(1, 0.5, 0); // (x,y,z 순서)
+
+
+const geometry2 = new THREE.BoxGeometry(0.5, 1, 0.5);
+const material2 = new THREE.MeshBasicMaterial({ color: 0x00000 })
 const cube2 = new THREE.Mesh(geometry2, material2);
-cube2.position.set(0, 0.5, 0); // (x,y,z 순서)
+const cube2_x = 0;
+const cube2_y = 0.55;
+const cube2_z = 0;
+cube2.position.set(cube2_x, cube2_y, cube2_z); // (x,y,z 순서)
+cube2.name = 'rack1'
+cube2.userData = {rackId : '1'};
 
 //박스 라인 생성 및 설정
-const edges = new THREE.EdgesGeometry(geometry);
+const edges = new THREE.EdgesGeometry(geometry2);
 const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
 const boxEdges = new THREE.LineSegments(edges, lineMaterial);
-boxEdges.position.set(2, 0, 0)
+boxEdges.position.set(cube2_x, cube2_y, cube2_z);
+ 
+clickableobjects.push(cube2);
 
 
 //scene에 추가
@@ -62,7 +102,7 @@ scene.add(boxEdges);
 
 // 카메라 위치 조정
 camera.position.x = 3;
-camera.position.y = 1;
+camera.position.y = 7;
 camera.position.z = 7; // (+)줌아웃, (-) 줌인
 camera.lookAt(3, 0, 0) // 카메라가 고정적으로 바라보는 지점 고정. 기본값 0,0,0
 
@@ -84,12 +124,41 @@ function animate() {
 
 animate();
 
+//클릭이벤트 설정
+window.addEventListener('click', e =>{
+
+    // 마우스 위치를 정규화된 장치 좌표로 변환 (-1 ~ 1)
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+    const intersects = raycaster.intersectObjects(clickableobjects);
+    
+
+    if(intersects.length > 0){
+        const clickedObj = intersects[0].object;
+        console.log(clickedObj);
+        // const clickedObj = intersects.find(intersection => intersection.object === cube2);
+
+        if (clickedObj.userData && clickedObj.userData.rackId) {
+            const rackId = clickedObj.userData.rackId; // 객체의 rackId 가져오기
+            console.log(`Clicked rackId: ${rackId}`);
+
+            // 특정 rackId에 따라 동작 설정
+            if (rackId === '1') {
+                window.location.href = './room.html'; // 페이지 이동
+            }
+        } else {
+            console.log('No userData found on the clicked object.');
+        }
+    }
+});
+
 //기타 이벤트 처리
 window.addEventListener('resize', onWindowResize, false);
 
-// 브라우저창 크기가 변경될 때 발생하는 resize 반응형 처리
-function onWindowResize() {
+function onWindowResize(e) {
     camera.aspect = window.innerWidth / window.innerHeight;
-    camera.updateProjectionMatrix(); // 카메라 설정 (특히 aspect) 파라미터가 변경되면 반드시 호출되어야 함
+    camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 }
