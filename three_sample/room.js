@@ -30,6 +30,7 @@ const mouse = new THREE.Vector2();
 const raycaster = new THREE.Raycaster();
 const clickableObjects = []; // 클릭가능한 객체들을 저장할 배열 
 const temperatureLights = []; // 경고등
+const temperatureWarnings = new Map(); // 온도경고 상태 추적
 
 // 3. 룸 만들기
 // 3-1. 조명 설정
@@ -80,6 +81,7 @@ scene.add(rightWall);
 
 // 4. 서버랙 만들기
 function createServerRack(x,z, rackNumber){
+    temperatureWarnings.set(rackNumber, false);
     const rackGroup = new THREE.Group();
 
     //랙 프레임
@@ -192,20 +194,12 @@ function createTemperatureLight(x,z,temperature){
 }
 
 
-// Animation Loop
-function animate(){
-    renderer.setAnimationLoop(animate);
-    controls.update();
-    renderer.render(scene, camera);
-}
-
-animate();
-
-
 
 // 기타 이벤트 처리
 window.addEventListener('resize', onWindowResize, false);
 window.addEventListener('click', onMouseClick, false);
+
+
 
 // 6-1 resize event
 function onWindowResize(e) {
@@ -249,7 +243,64 @@ function onMouseClick(e){
 }
 
 
-// 온도변화 시뮬레이션
-function updateTemperature(){
 
+// 온도변화 시뮬레이션 (자동)
+function updateTemperatures(){
+    clickableObjects.forEach(object => {
+        if (object.userData.type === 'rack') {
+            // 온도 변화 (-1°C ~ +1°C)
+            object.userData.temperature += (Math.random() * 2 - 1);
+            // 온도 범위 제한 (20°C ~ 40°C)
+            object.userData.temperature = Math.max(20, Math.min(40, object.userData.temperature));
+            
+            // 온도 경고 체크 (35도이상)
+            const hasWarning = temperatureWarnings.get(object.userData.number);
+
+            if(object.userData.temperature > 35 && !hasWarning){
+                temperatureWarnings.set(object.userData.temperature, true);
+                const rackNumber = object.userData.rackNumber;
+                const temperature = object.userData.temperature;
+                showAlert(rackNumber, temperature);
+
+            } else if (object.userData.number <= 35 && hasWarning){
+                temperatureWarnings.set(object.userData.temperature, false);
+            }
+
+            // 해당 랙의 온도 표시등 업데이트
+            const tempLight = temperatureLights.find(t => t.rack === object);
+            if (tempLight) {
+                const t = (object.userData.temperature - 20) / 20;
+                const color = new THREE.Color();
+                color.setHSL(0.3 * (1 - t), 1, 0.5);
+                tempLight.light.material.color = color;
+                tempLight.light.material.opacity = 0.3 + (t * 0.5);
+            }
+        }
+    });
 }
+
+//35도 이상일 시 경고메세지 표시
+function showAlert(rackNumber, temperature){
+    console.log(rackNumber, temperature);
+    // const alertDiv = document.createElement('div');
+    // alertDiv.className = 'alert';
+    // alertDiv.innerHtml = `온도경고! 서버랙 ${rackNumber} 번 온도가 ${temperature}도 입니다.<br> 확인해주세요`;
+    // document.appendChild(alertDiv);
+
+    // setTimeout(()=> {
+    //     alertDiv.style.opacity='0';
+    //     alertDiv.style.transition = 'opacity 0.5s';
+    // }, 2000)
+}
+
+
+
+// Animation Loop
+function animate(){
+    renderer.setAnimationLoop(animate);
+    controls.update();
+    // updateTemperatures();
+    renderer.render(scene, camera);
+}
+
+animate();
