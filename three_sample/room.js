@@ -198,7 +198,7 @@ function createTemperatureLight(x,z,temperature){
 // 기타 이벤트 처리
 window.addEventListener('resize', onWindowResize, false);
 window.addEventListener('click', onMouseClick, false);
-
+window.addEventListener('DOMContentLoaded', checkTemperatures, false);
 
 
 // 6-1 resize event
@@ -221,7 +221,6 @@ function onMouseClick(e){
     raycaster.setFromCamera(mouse, camera); // 카메라의 시점에서 마우스가 가리키는 방향으로 광선 생성 -> 객체와 교차여부 확인
 
     const intersects = raycaster.intersectObjects(clickableObjects);
-    console.log(intersects);
 
     if(intersects.length > 0 ){
         // const find = intersects.find(obj => obj.object.userData.type ==='server'); //find메서드로 일치하는 데이터를 콜백으로 받음
@@ -242,6 +241,25 @@ function onMouseClick(e){
     }
 }
 
+function checkTemperatures(){
+    clickableObjects.forEach(object => {
+        if (object.userData.type === 'rack') {
+            // 온도 경고 체크 (35도이상)
+            const temperature = object.userData.temperature;
+            const rackNumber = object.userData.number;
+            const hasWarning = temperatureWarnings.get(rackNumber);
+
+            if(temperature > 35 && !hasWarning){
+                temperatureWarnings.set(rackNumber, true);
+                showAlert(rackNumber, temperature);
+
+            } else if (temperature <= 35 && hasWarning){
+                temperatureWarnings.set(rackNumber, false);
+            }
+            
+        }
+    });
+}
 
 
 // 온도변화 시뮬레이션 (자동)
@@ -258,11 +276,11 @@ function updateTemperatures(){
 
             if(object.userData.temperature > 35 && !hasWarning){
                 temperatureWarnings.set(object.userData.temperature, true);
-                const rackNumber = object.userData.rackNumber;
+                const rackNumber = object.userData.number;
                 const temperature = object.userData.temperature;
                 showAlert(rackNumber, temperature);
 
-            } else if (object.userData.number <= 35 && hasWarning){
+            } else if (object.userData.temperature <= 35 && hasWarning){
                 temperatureWarnings.set(object.userData.temperature, false);
             }
 
@@ -281,16 +299,14 @@ function updateTemperatures(){
 
 //35도 이상일 시 경고메세지 표시
 function showAlert(rackNumber, temperature){
-    console.log(rackNumber, temperature);
-    // const alertDiv = document.createElement('div');
-    // alertDiv.className = 'alert';
-    // alertDiv.innerHtml = `온도경고! 서버랙 ${rackNumber} 번 온도가 ${temperature}도 입니다.<br> 확인해주세요`;
-    // document.appendChild(alertDiv);
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert';
+    alertDiv.innerHTML = `온도경고! 서버랙 ${rackNumber} 번 온도가 ${temperature}도 입니다.<br> 확인해주세요`;
+    document.body.appendChild(alertDiv);
 
-    // setTimeout(()=> {
-    //     alertDiv.style.opacity='0';
-    //     alertDiv.style.transition = 'opacity 0.5s';
-    // }, 2000)
+    setTimeout(()=> {
+        alertDiv.remove()
+    }, 2000)
 }
 
 
@@ -300,6 +316,7 @@ function animate(){
     renderer.setAnimationLoop(animate);
     controls.update();
     // updateTemperatures();
+    checkTemperatures();
     renderer.render(scene, camera);
 }
 
