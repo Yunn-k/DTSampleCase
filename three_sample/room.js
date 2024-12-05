@@ -38,7 +38,7 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // 전체조명
 scene.add(ambientLight);
 
 const directionlLight = new THREE.DirectionalLight(0xffffff, 0.5); // 특정방향 조명 DirectionalLight( color : Integer, intensity : Float )
-directionlLight.position.set(5,5,5);
+directionlLight.position.set(2, 2, 2);
 directionlLight.castShadow = true; // 동적그림자 (비용이 많이듦)
 scene.add(directionlLight);
 
@@ -46,7 +46,8 @@ scene.add(directionlLight);
 const floorGeometry = new THREE.PlaneGeometry(10,5);
 const floorMaterial = new THREE.MeshStandardMaterial({
     color : 0xcccccc,
-    roughness : 0.8
+    roughness : 0.8,
+    metalness: 0.2
 })
 const floor = new THREE.Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
@@ -109,12 +110,13 @@ function createServerRack(x,z, rackNumber){
 
     //랙 바닥 온도표시등
     const temperatureLight = createTemperatureLight(x, z, rack.userData.temperature);
-    temperatureLights.push({
-        light: temperatureLight,
-        rack: rack
-    });
-
-    rackGroup.add(temperatureLight);
+    if (temperatureLight) {
+        temperatureLights.push({
+            light: temperatureLight,
+            rack: rack
+        });
+        rackGroup.add(temperatureLight);
+    }
 
 
     // 랙 라인
@@ -123,7 +125,7 @@ function createServerRack(x,z, rackNumber){
         color: 0x3f7b9d
     })
     const rackEdges = new THREE.LineSegments(rackEdgeGeometry, rackEdgeMaterial);
-    rackEdges.position.set(x,1,z);
+    rackEdges.position.set(x, 1, z);
     rackGroup.add(rackEdges); // rackGroup에 추가해주어야 클릭이벤트시 하나의 덩어리로 인식함. scene에 추가하면 안됨!
 
     //서버 유닛들 추가
@@ -162,27 +164,51 @@ function createServerRack(x,z, rackNumber){
 }
 
 scene.add(createServerRack(-1.5, 0, 1));
+// scene.add(createServerRack(0, 0, 1));
 scene.add(createServerRack(0,-1, 2))
 scene.add(createServerRack(1.5,-2, 3))
 
 
-// 5. 온도 경고등
+// 5. 온도 경고등 - 바닥에서 원형 생성
 function createTemperatureLight(x,z,temperature){
+
+    if (temperature < 35) return null; // 35도 이하일경우 온도표시 없음
+
     const radius = 0.8;
     const segments = 32;
     const lightGeometry = new THREE.CircleGeometry(radius, segments);
 
     //온도에 따른 색상 설정(20도~40도 사이)
     const t = (temperature - 20) / 20; // 0~1 범위로 정규화
-    const color = new THREE.Color();
-    color.setHSL(0.3 * (1 - t), 1, 0.5); // 초록(0.3)에서 빨강(0)으로
+
+    // 각 버텍스 색상 설정
+    const colors = [];
+    const centerColor = new THREE.Color(1, 0, 0);
+    const edgeColor = new THREE.Color(0, 0, 0);
+
+    // edgeColor.setHSL(0, 0, 0);
+
+    // const color = new THREE.Color();
+    // color.setHSL(0.3 * (1 - t), 1, 0.5); 
+
+    for(let i = 0; i < lightGeometry.attributes.position.count; i++){
+        if (i === 0 ){ // 중심점
+            colors.push(centerColor.r, centerColor.g, centerColor.b);
+        } else{
+            colors.push(edgeColor.r, edgeColor.g, edgeColor.b);
+        }
+    }
+
+    // 색상을 버텍스 속성으로 추가
+    lightGeometry.setAttribute(
+        'color', new THREE.Float32BufferAttribute(colors, 3) // 32비트 데이터를 GPU에 전송.
+    )
 
     const lightMaterial = new THREE.MeshBasicMaterial({
-        color: color,
-        transparent : true,
-        opacity: 0.3,
-        // opacity: 0.3 + (t * 0.5),
-        // side: THREE.FrontSide
+        vertexColors : true, // 버텍스 활성화
+        // color: color,
+        transparent : true, // 투명도 활성화
+        opacity: 0.5, // 전체 투명도 설정
         side: THREE.DoubleSide
     });
 
@@ -192,7 +218,6 @@ function createTemperatureLight(x,z,temperature){
 
     return light;
 }
-
 
 
 // 기타 이벤트 처리
