@@ -46,29 +46,36 @@ const loader = new GLTFLoader();
 loader.load('resources/textures/BoomBox.glb', 
     function(gltf){ // onLoad - 로딩이 완료된 후 호출되는 함수
         console.log(gltf);
-        scene.add(gltf.scene); // 기존 scene에 로딩한 scene을 추가
-
+        
         console.log('loading complete');
-
+        
         //모델크기 확인
-        var gltfObj = new THREE.Box3().setFromObject(gltf.scene);
+        var gltfObj = new THREE.Box3().setFromObject(gltf.scene); // gltf.scene을 감싼 box3객체. 
         var gltfObjSize = gltfObj.getSize(new THREE.Vector3());
         console.log(gltfObjSize);
-
-        //모델 스케일 변경
+        
+        //모델 스케일 변경 (gltf.scene이 로딩된 객체 그자체.)
         gltf.scene.scale.x = 50;
         gltf.scene.scale.y = 50;
         gltf.scene.scale.z = 50;
-
+        
         gltf.scene.position.set(-2,0.5,0);
-
+        // gltf.scene.userData = {itemId : '1'}
+        // gltf.scene.userData.itemId = '1';
+        console.log(gltfObj);
+        console.log('GLTF Scene:', gltf.scene);
+        console.log('User Data:', gltf.scene.userData);
+        console.log('Extras:', gltf.scene.userData.extras || 'No extras found');
+        clickableobjects.push(gltf.scene);
+        
+        scene.add(gltf.scene); // 기존 scene에 로딩한 scene을 추가
 }
 // , function (xhr){ // onProgress - 로딩이 진행되는동안 호출될 함수
 //     console.log()
 // }
-, function (error){ // onError - 에러정보
-    console.error(error);
-}
+// , function (error){ // onError - 에러정보
+//     console.error(error);
+// }
 )
 
 // 조명 설정
@@ -130,9 +137,6 @@ scene.add(cube);
 scene.add(cube2);
 scene.add(boxEdges);
 
-// gltf 파일 읽어오기
-
-
 
 // 카메라 위치 조정
 camera.position.x = 3;
@@ -177,13 +181,19 @@ window.addEventListener('click', e =>{
         console.log(clickedObj);
         // const clickedObj = intersects.find(intersection => intersection.object === cube2);
 
-        if (clickedObj.userData && clickedObj.userData.rackId) {
+        if (clickedObj.userData) {
             const rackId = clickedObj.userData.rackId; // 객체의 rackId 가져오기
+            const itemId = clickedObj.userData.itemId;
             console.log(`Clicked rackId: ${rackId}`);
+            console.log(`Clicked itemId: ${itemId}`);
 
             // 특정 rackId에 따라 동작 설정
             if (rackId === '1') {
                 window.location.href = './room.html'; // 페이지 이동
+            }
+
+            if (itemId === '1'){
+                window.location.href = './room.html'
             }
         } else {
             console.log('No userData found on the clicked object.');
