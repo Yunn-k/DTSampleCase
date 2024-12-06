@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 // BoxGeometry로 큐브 생성 테스트
 //--- 1. 기본 3가지값 세팅
@@ -40,6 +41,36 @@ const raycaster = new THREE.Raycaster();
 const clickableobjects = [];
 const mouse = new THREE.Vector2();
 
+// gltf loader
+const loader = new GLTFLoader();
+loader.load('resources/textures/BoomBox.glb', 
+    function(gltf){ // onLoad - 로딩이 완료된 후 호출되는 함수
+        console.log(gltf);
+        scene.add(gltf.scene); // 기존 scene에 로딩한 scene을 추가
+
+        console.log('loading complete');
+
+        //모델크기 확인
+        var gltfObj = new THREE.Box3().setFromObject(gltf.scene);
+        var gltfObjSize = gltfObj.getSize(new THREE.Vector3());
+        console.log(gltfObjSize);
+
+        //모델 스케일 변경
+        gltf.scene.scale.x = 50;
+        gltf.scene.scale.y = 50;
+        gltf.scene.scale.z = 50;
+
+        gltf.scene.position.set(-2,0.5,0);
+
+}
+// , function (xhr){ // onProgress - 로딩이 진행되는동안 호출될 함수
+//     console.log()
+// }
+, function (error){ // onError - 에러정보
+    console.error(error);
+}
+)
+
 // 조명 설정
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
@@ -74,7 +105,7 @@ const geometry = new THREE.BoxGeometry(0.5, 1, 0.5);
 const material = new THREE.MeshBasicMaterial({ color: 0x00f0f0 });
 const cube = new THREE.Mesh(geometry, material); // 큐브 설정값 결합
 cube.position.set(1, 0.5, 0); // (x,y,z 순서)
-
+clickableobjects.push(cube);
 
 const geometry2 = new THREE.BoxGeometry(0.5, 1, 0.5);
 const material2 = new THREE.MeshBasicMaterial({ color: 0x00000 })
@@ -94,17 +125,23 @@ boxEdges.position.set(cube2_x, cube2_y, cube2_z);
  
 clickableobjects.push(cube2);
 
-
 //scene에 추가
 scene.add(cube);
 scene.add(cube2);
 scene.add(boxEdges);
+
+// gltf 파일 읽어오기
+
+
 
 // 카메라 위치 조정
 camera.position.x = 3;
 camera.position.y = 7;
 camera.position.z = 7; // (+)줌아웃, (-) 줌인
 camera.lookAt(3, 0, 0) // 카메라가 고정적으로 바라보는 지점 고정. 기본값 0,0,0
+
+
+
 
 //---3. 장면렌더링
 //애니메이션 루프를 이용하여 렌더링
