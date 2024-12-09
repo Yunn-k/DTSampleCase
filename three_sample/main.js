@@ -60,7 +60,7 @@ loader.load('resources/textures/BoomBox.glb',
         gltf.scene.scale.z = 50;
         
         gltf.scene.position.set(-2,0.5,0);
-        // gltf.scene.userData = {itemId : '1'}
+        gltf.scene.userData = {itemId : '1', rackId : '2'};
         // gltf.scene.userData.itemId = '1';
         console.log(gltfObj);
         console.log('GLTF Scene:', gltf.scene);
@@ -173,15 +173,21 @@ window.addEventListener('click', e =>{
     mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
 
     raycaster.setFromCamera(mouse, camera);
-    const intersects = raycaster.intersectObjects(clickableobjects);
+    const intersects = raycaster.intersectObjects(clickableobjects); // true값은 하위노드까지 탐색 (default: false)
     
 
     if(intersects.length > 0){
-        const clickedObj = intersects[0].object;
+        let clickedObj = intersects[0].object; // 재할당을 위해 let으로 선언
         console.log(clickedObj);
         // const clickedObj = intersects.find(intersection => intersection.object === cube2);
 
-        if (clickedObj.userData) {
+        console.log(`finding parent data: ${clickedObj.parent.userData.rackId}`);
+
+        while (clickedObj && !clickedObj.userData.itemId) { //부모노드(clickedObj ==undefined, itemId가 있음) 의 userData를 찾기 위한 탐색 
+            clickedObj = clickedObj.parent; // 부모노드로 이동
+        };
+
+        if (clickedObj && clickedObj.userData) {
             const rackId = clickedObj.userData.rackId; // 객체의 rackId 가져오기
             const itemId = clickedObj.userData.itemId;
             console.log(`Clicked rackId: ${rackId}`);
@@ -192,9 +198,9 @@ window.addEventListener('click', e =>{
                 window.location.href = './room.html'; // 페이지 이동
             }
 
-            if (itemId === '1'){
-                window.location.href = './room.html'
-            }
+            // if (itemId === '1'){
+            //     window.location.href = './room.html'
+            // }
         } else {
             console.log('No userData found on the clicked object.');
         }
