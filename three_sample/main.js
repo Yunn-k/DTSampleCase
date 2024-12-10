@@ -26,11 +26,11 @@ controls.dampingFactor = 0.05; //댐핑 효과의 강도 설정 > 값이 클수�
 controls.minDistance = 2; // 줌 최소거리
 controls.maxDistance = 10; // 줌 최대거리
 
-// controls.minPolarAngle = Math.PI / 4; // 45도 (상하 최소각도)
-// controls.maxPolarAngle = Math.PI / 2;
+controls.minPolarAngle = Math.PI / 4; // 45도 (상하 최소각도)
+controls.maxPolarAngle = Math.PI / 2;
 
-// controls.minAzimuthAngle = -Math.PI / 4; // -45도 (좌우 최소각도)
-// controls.maxAzimuthAngle = Math.PI / 4;
+controls.minAzimuthAngle = -Math.PI / 4; // -45도 (좌우 최소각도)
+controls.maxAzimuthAngle = Math.PI / 4;
 
 controls.target.set(1, 1, 1); // 새로운 바라볼 지점 설정
 controls.update(); // 설정이 끝난 뒤 업데이트
@@ -63,6 +63,13 @@ loader.load('resources/textures/server_rack.glb',
         //생성 위치 설정
         rackModel.position.set(0,0,0); // 기준위치 초기화
 
+        rackModel.traverse((child)=> { // 자식 노드가 가질 공통 데이터 추가
+            if(child.name === 'Front_Door001'){ //자식노드 선택하여 invisible 처리
+                child.visible = false; // 해당 노드를 숨김
+            }
+            child.userData = {isRack : true};
+        })
+
         let rackPos = []
         for(let i = -0.6 ; i < 1.3 ; i+=0.3){
                 rackPos.push({x : 0, y : 0, z : i})
@@ -78,47 +85,45 @@ loader.load('resources/textures/server_rack.glb',
         //     {x : 0, y : 0, z : 1.2},
         // ]
 
+        const lod = new THREE.LOD(); // LOD설정
+
         rackPos.forEach((pos, index) => {
             const rackClone = rackModel.clone(); // glb 복제
+            lod.addLevel(rackClone, index * 5); // 거리에 따라 LOD 설정
             rackClone.rotation.y = -Math.PI / 2;
             rackClone.position.set(pos.x, pos.y, pos.z); // 개별 위치 설정
+            rackClone.userData = {rackId : `rack_${index + 1}`};
 
             const rackClone_r = rackModel.clone();
+            lod.addLevel(rackClone_r, index * 5);
             rackClone_r.rotation.y = Math.PI / 2;
             rackClone_r.position.set(pos.x + 1 , -pos.y, pos.z);
+            rackClone_r.userData = {rackId : `rack_${index + 1}`};
 
-            //고유아이디 추가
-            // rackClone.userData = {rackId : `rack_${index+1}`};
+            // rackClone_r.traverse((child)=> {
+            //     child.userData = {rackId : `rack_r_${index + 1}`} // 자식노드에게도 모두 id추가
+            // });
 
-            rackClone.traverse((child)=> {
-                child.userData = {rackId : `rack_${index + 1}`} // 자식노드에게도 모두 id추가
-
-                if(child.name === 'Front_Door001'){ //자식노드 선택하여 invisible 처리
-                    child.visible = false; // 해당 노드를 숨김
-                }
-            });
-
-            rackClone_r.traverse((child)=> {
-                child.userData = {rackId : `rack_r_${index + 1}`} // 자식노드에게도 모두 id추가
-
-                if(child.name === 'Front_Door001'){ //자식노드 선택하여 invisible 처리
-                    child.visible = false; // 해당 노드를 숨김
-                }
-            });
-
-
-            clickableobjects.push(rackClone);
-            clickableobjects.push(rackClone_r);
-
-            rackGroup.add(rackClone);
-            rackGroup.add(rackClone_r);
+            clickableobjects.push(rackClone, rackClone_r);
+            rackGroup.add(rackClone, rackClone_r);
 
             const room = createRoom();
+            room.position.set(0,0,0); // 고정된 위치로 초기화
             rackGroup.add(room);
 
+            for (let i = -5; i < 1; i+=2){
+                const serverRoom = rackGroup.clone(true); // true옵션으로 깊은복제
+                serverRoom.position.set(i, 0, 0);
+                // serverRoom.castShadow = true;
+                // serverRoom.receiveShadow = true;
+                scene.add(serverRoom);
+            }
+
+            
+
             //랙 그룹 위치 설정
-            rackGroup.position.set(0, 0, 0);
-            scene.add(rackGroup);
+            // rackGroup.position.set(0, 0, 0);
+            // scene.add(rackGroup);
 
             //  //계층구조 확인
             //  rackClone.traverse((node)=> {console.log('Node:', node.name, 'userData: ', node.userData)});
@@ -197,8 +202,9 @@ const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
 
 const directionlLight = new THREE.DirectionalLight(0xffffff, 0.5); // 특정방향 조명 DirectionalLight( color : Integer, intensity : Float )
+directionlLight.shadow.mapSize.width = 1024; // 기본값: 512
+directionlLight.shadow.mapSize.height = 1024;
 directionlLight.position.set(2, 2, 2);
-directionlLight.castShadow = true; // 동적그림자 (비용이 많이듦)
 scene.add(directionlLight);
 
 
@@ -293,7 +299,9 @@ function animate() {
     // requestAnimationFrame(animate) // 순수 자바스크립트에서 지원하는 애니메이션 루프
     renderer.setAnimationLoop(animate); // three.js의 WebGLRenderer에서 지원하는 애니메이션 루프
 
-    controls.update(); // OrbitControls 업데이트
+    if (controls.enabled){
+        controls.update(); // OrbitControls 업데이트
+    }
     renderer.render(scene, camera);
 }
 
