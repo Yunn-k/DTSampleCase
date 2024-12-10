@@ -111,13 +111,18 @@ loader.load('resources/textures/server_rack.glb',
 
             rackClone.traverse((child)=> {
                 child.userData = {rackId : `rack_${index + 1}`} // 자식노드에게도 모두 id추가
+
+                if(child.name === 'Front_Door001'){ //자식노드 선택하여 invisible 처리
+                    child.visible = false; // 해당 노드를 숨김
+                }
             });
+
 
             scene.add(rackClone);
             clickableobjects.push(rackClone);
 
             //  //계층구조 확인
-            //  rackClone.traverse((node)=> {console.log('Node:', node.name, 'userData: ', node.userData)});
+             rackClone.traverse((node)=> {console.log('Node:', node.name, 'userData: ', node.userData)});
         });
 
         // gltf.scene.userData = {itemId : '1', rackId : '2'};
