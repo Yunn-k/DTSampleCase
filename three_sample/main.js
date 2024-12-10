@@ -26,11 +26,11 @@ controls.dampingFactor = 0.05; //댐핑 효과의 강도 설정 > 값이 클수�
 controls.minDistance = 2; // 줌 최소거리
 controls.maxDistance = 10; // 줌 최대거리
 
-controls.minPolarAngle = Math.PI / 4; // 45도 (상하 최소각도)
-controls.maxPolarAngle = Math.PI / 2;
+// controls.minPolarAngle = Math.PI / 4; // 45도 (상하 최소각도)
+// controls.maxPolarAngle = Math.PI / 2;
 
-controls.minAzimuthAngle = -Math.PI / 4; // -45도 (좌우 최소각도)
-controls.maxAzimuthAngle = Math.PI / 4;
+// controls.minAzimuthAngle = -Math.PI / 4; // -45도 (좌우 최소각도)
+// controls.maxAzimuthAngle = Math.PI / 4;
 
 controls.target.set(1, 1, 1); // 새로운 바라볼 지점 설정
 controls.update(); // 설정이 끝난 뒤 업데이트
@@ -47,6 +47,9 @@ loader.load('resources/textures/server_rack.glb',
     function(gltf){ // onLoad - 로딩이 완료된 후 호출되는 함수
         console.log('loading complete');
 
+        //랙 그룹 생성
+        const rackGroup = new THREE.Group();
+
         //모델크기 확인
         var gltfObj = new THREE.Box3().setFromObject(gltf.scene); // gltf.scene을 감싼 box3객체. 
         var gltfObjSize = gltfObj.getSize(new THREE.Vector3());
@@ -54,58 +57,36 @@ loader.load('resources/textures/server_rack.glb',
         
         //모델 스케일 변경 (gltf.scene이 로딩된 객체 그자체.)
         const rackModel = gltf.scene;
-        rackModel.scale.set(0.7, 0.7, 0.7);
+        const rackScale = 0.5
+        rackModel.scale.set(rackScale, rackScale, rackScale);
 
         //생성 위치 설정
         rackModel.position.set(0,0,0); // 기준위치 초기화
 
         let rackPos = []
-        for(let i = -4 ; i < 5 ; i++){
-            if (i == 0) continue;
-
-            for (let j = -2; j < 3; j ++){
-                if (j == 0) continue;
-                rackPos.push({x : i, y : 0, z : j})
-            }
+        for(let i = -0.6 ; i < 1.3 ; i+=0.3){
+                rackPos.push({x : 0, y : 0, z : i})
         }
 
         // const rackPositions = [
-        //     {x : -4, y : 0, z : -2},
-        //     {x : -4, y : 0, z : -1},
-        //     {x : -4, y : 0, z : 0},
-        //     {x : -4, y : 0, z : 1},
-        //     {x : -4, y : 0, z : 2},
-        //     {x : -3, y : 0, z : -2},
-        //     {x : -3, y : 0, z : -1},
-        //     {x : -3, y : 0, z : 0},
-        //     {x : -3, y : 0, z : 1},
-        //     {x : -3, y : 0, z : 2},
-        //     {x : -1, y : 0, z : -2},
-        //     {x : -1, y : 0, z : -1},
-        //     {x : -1, y : 0, z : 0},
-        //     {x : -1, y : 0, z : 1},
-        //     {x : -1, y : 0, z : 2},
-        //     {x : 0, y : 0, z : -2},
-        //     {x : 0, y : 0, z : -1},
+        //     {x : 0, y : 0, z : -0.6},
+        //     {x : 0, y : 0, z : -0.3},
         //     {x : 0, y : 0, z : 0},
-        //     {x : 0, y : 0, z : 1},
-        //     {x : 0, y : 0, z : 2},
-        //     {x : 2, y : 0, z : -2},
-        //     {x : 2, y : 0, z : -1},
-        //     {x : 2, y : 0, z : 0},
-        //     {x : 2, y : 0, z : 1},
-        //     {x : 2, y : 0, z : 2},
-        //     {x : 3, y : 0, z : -2},
-        //     {x : 3, y : 0, z : -1},
-        //     {x : 3, y : 0, z : 0},
-        //     {x : 3, y : 0, z : 1},
-        //     {x : 3, y : 0, z : 2},
+        //     {x : 0, y : 0, z : 0.3},
+        //     {x : 0, y : 0, z : 0.6},
+        //     {x : 0, y : 0, z : 0.9},
+        //     {x : 0, y : 0, z : 1.2},
         // ]
 
         rackPos.forEach((pos, index) => {
             const rackClone = rackModel.clone(); // glb 복제
+            rackClone.rotation.y = -Math.PI / 2;
             rackClone.position.set(pos.x, pos.y, pos.z); // 개별 위치 설정
-            
+
+            const rackClone_r = rackModel.clone();
+            rackClone_r.rotation.y = Math.PI / 2;
+            rackClone_r.position.set(pos.x + 1 , -pos.y, pos.z);
+
             //고유아이디 추가
             // rackClone.userData = {rackId : `rack_${index+1}`};
 
@@ -117,23 +98,35 @@ loader.load('resources/textures/server_rack.glb',
                 }
             });
 
+            rackClone_r.traverse((child)=> {
+                child.userData = {rackId : `rack_r_${index + 1}`} // 자식노드에게도 모두 id추가
 
-            scene.add(rackClone);
+                if(child.name === 'Front_Door001'){ //자식노드 선택하여 invisible 처리
+                    child.visible = false; // 해당 노드를 숨김
+                }
+            });
+
+
             clickableobjects.push(rackClone);
+            clickableobjects.push(rackClone_r);
+
+            rackGroup.add(rackClone);
+            rackGroup.add(rackClone_r);
+
+            const room = createRoom();
+            rackGroup.add(room);
+
+            //랙 그룹 위치 설정
+            rackGroup.position.set(0, 0, 0);
+            scene.add(rackGroup);
 
             //  //계층구조 확인
-             rackClone.traverse((node)=> {console.log('Node:', node.name, 'userData: ', node.userData)});
+            //  rackClone.traverse((node)=> {console.log('Node:', node.name, 'userData: ', node.userData)});
         });
 
-        // gltf.scene.userData = {itemId : '1', rackId : '2'};
-        // gltf.scene.userData.itemId = '1';
-        // console.log(gltfObj);
         // console.log('GLTF Scene:', gltf.scene);
         // console.log('User Data:', gltf.scene.userData);
         // console.log('Extras:', gltf.scene.userData.extras || 'No extras found');
-        // clickableobjects.push(gltf.scene);
-        
-        // scene.add(gltf.scene); // 기존 scene에 로딩한 scene을 추가
 }
 // , function (xhr){ // onProgress - 로딩이 진행되는동안 호출될 함수
 //     console.log()
@@ -143,18 +136,87 @@ loader.load('resources/textures/server_rack.glb',
 // }
 )
 
+// 서버룸 겉면 생성
+function createRoom(){
+    const roomGroup = new THREE.Group();
+
+    const width = 1.2;
+    const height= 1;
+    const depth = 2.3;
+
+    // 공통 벽재질
+    const wallMaterial = new THREE.MeshStandardMaterial({
+        color : 0x333333,
+        roughness : 0.8,
+        metalness : 0.2,
+    });
+
+    const glassDoorGeometry = new THREE.PlaneGeometry(0.5, 0.7);
+    const glassDoorMaterial = new THREE.MeshStandardMaterial({
+        color : 0x00ffff,
+        transparent : true,
+        opacity : 0.1,
+        metalness : 0.5,
+    });
+    const glassDoor = new THREE.Mesh(glassDoorGeometry, glassDoorMaterial);
+    glassDoor.position.set(0.5, height / 2 - 0.1 , 1.47);
+    roomGroup.add(glassDoor);
+
+    const ceilingMaterial = new THREE.MeshStandardMaterial({
+        color : 0x00ffff,
+        transparent : true,
+        opacity : 0,
+        roughness : 0.2,
+        metalness : 0.5,
+    })
+
+    // 배열로 지정 (앞, 뒤, 왼, 오, 위, 아래) (우, 좌, 위, 아래, 앞, 뒤)
+    const materials =[
+        wallMaterial,
+        wallMaterial,
+        ceilingMaterial,
+        ceilingMaterial,
+        wallMaterial,
+        wallMaterial,
+    ]
+    
+    const roomGeometry = new THREE.BoxGeometry(width, height, depth);
+    const room = new THREE.Mesh(roomGeometry, materials);
+
+    room.position.set(0.5,height / 2, 0.3);
+    room.receiveShadow = true;
+    roomGroup.add(room);
+
+    return roomGroup;
+
+}
+
+
 // 조명 설정
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
 
+const directionlLight = new THREE.DirectionalLight(0xffffff, 0.5); // 특정방향 조명 DirectionalLight( color : Integer, intensity : Float )
+directionlLight.position.set(2, 2, 2);
+directionlLight.castShadow = true; // 동적그림자 (비용이 많이듦)
+scene.add(directionlLight);
+
 
 //---2. 방 생성
 // 바닥 생성
-const floorGeometry = new THREE.BoxGeometry(10, 5 , 0.1);
-const floorMaterial = new THREE.MeshStandardMaterial({
-    color : 0xffffff,
-    roughness : 0.8,
-    metalness: 0.2
+const floorTexture = createfloorTexture(512, 2); // 바닥면 크기 512px, 8*8 타일
+
+// 텍스처 반복설정
+floorTexture.wrapS = THREE.RepeatWrapping;
+floorTexture.wrapT = THREE.RepeatWrapping;
+floorTexture.repeat.set(15,7); // 전체타일 패턴 반복
+
+const floorGeometry = new THREE.BoxGeometry(15, 7 , 0.1);
+const floorMaterial = new THREE.MeshBasicMaterial({
+    map : floorTexture,
+    // color : 0xffffff,
+    // roughness : 0.8,
+    // metalness: 0.2
 });
 const floor = new THREE.Mesh(floorGeometry, floorMaterial);
 floor.rotation.x = -Math.PI / 2;
@@ -162,47 +224,59 @@ floor.receiveShadow = true;
 scene.add(floor);
 
 // 벽면 생성
-const backwallGeometry = new THREE.BoxGeometry(10, 2, 0.1);
+const backwallGeometry = new THREE.BoxGeometry(15, 2, 0.1);
 const backwallMaterial = new THREE.MeshStandardMaterial({
     color: 0xffffff,
     roughness : 0.8,
     metalness: 0.5
 })
 const backwall = new THREE.Mesh(backwallGeometry, backwallMaterial);
-backwall.position.set(0, 1, -2.4)
+backwall.position.set(0, 1, -2.7)
 scene.add(backwall);
 
+// 기둥 생성
+const columnGeometry = new THREE.BoxGeometry(0.5, 2, 0.5);
+const columnMaterial = new THREE.MeshStandardMaterial({
+    color: 0xf0f0f0,
+    roughness : 0.8,
+    metalness : 0.5,
+})
+const column = new THREE.Mesh(columnGeometry, columnMaterial);
+column.position.set(0,1,-2.5)
+scene.add(column);
 
-//박스 생성 및 설정
-const geometry = new THREE.BoxGeometry(0.5, 2, 0.5);
-const material = new THREE.MeshBasicMaterial({ 
-    color: 0x555555, 
-    roughness: 0.2, 
-});
-const cube = new THREE.Mesh(geometry, material); // 큐브 설정값 결합
-cube.position.set(0, 1.1, -2); // (x,y,z 순서)
+// 바닥면 텍스쳐 생성
+function createfloorTexture(size, divisions){
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const context = canvas.getContext('2d');
 
-const geometry2 = new THREE.BoxGeometry(0.5, 1, 0.5);
-const material2 = new THREE.MeshBasicMaterial({ color: 0x00000 })
-const cube2 = new THREE.Mesh(geometry2, material2);
-const cube2_x = 0;
-const cube2_y = 0.55;
-const cube2_z = 0;
-cube2.position.set(cube2_x, cube2_y, cube2_z); // (x,y,z 순서)
+    context.fillStyle = '#E0E0E0 ';
+    context.fillRect(0, 0, size, size);
 
-//박스 라인 생성 및 설정
-const edges = new THREE.EdgesGeometry(geometry2);
-const lineMaterial = new THREE.LineBasicMaterial({ color: 0xffffff });
-const boxEdges = new THREE.LineSegments(edges, lineMaterial);
-boxEdges.position.set(cube2_x, cube2_y, cube2_z);
- 
-clickableobjects.push(cube2);
+    const step = size / divisions;
+    context.strokeStyle = '#000000';
+    context.lineWidth = 3;
+   
+    for (let i = 0; i <= divisions; i++) {
+        const position = i * step;
 
-//scene에 추가
-scene.add(cube);
-// scene.add(cube2);
-// scene.add(boxEdges);
+        // 수평선
+        context.beginPath();
+        context.moveTo(0, position);
+        context.lineTo(size, position);
+        context.stroke();
 
+        // 수직선
+        context.beginPath();
+        context.moveTo(position, 0);
+        context.lineTo(position, size);
+        context.stroke();
+    }
+
+    return new THREE.CanvasTexture(canvas);
+}
 
 // 카메라 위치 조정
 camera.position.x = 3;
@@ -218,12 +292,6 @@ camera.lookAt(3, 0, 0) // 카메라가 고정적으로 바라보는 지점 고�
 function animate() {
     // requestAnimationFrame(animate) // 순수 자바스크립트에서 지원하는 애니메이션 루프
     renderer.setAnimationLoop(animate); // three.js의 WebGLRenderer에서 지원하는 애니메이션 루프
-
-    // cube.rotation.x += 0.01;
-    // cube.rotation.y += 0.01;
-
-    // boxEdges.rotation.x += 0.01;
-    // boxEdges.rotation.y += 0.01;
 
     controls.update(); // OrbitControls 업데이트
     renderer.render(scene, camera);
@@ -245,7 +313,6 @@ window.addEventListener('click', e =>{
     if(intersects.length > 0){
         let clickedObj = intersects[0].object; // 재할당을 위해 let으로 선언
         console.log(clickedObj);
-        // const clickedObj = intersects.find(intersection => intersection.object === cube2);
 
         console.log(`finding parent data: ${clickedObj.parent.userData.rackId}`);
 
